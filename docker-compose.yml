@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: newspaper
+      POSTGRES_USER: newspaper
+      POSTGRES_PASSWORD: newspaper
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U newspaper"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://newspaper:newspaper@postgres:5432/newspaper
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      PORT: 3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+
+  frontend:
+    build: .
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
